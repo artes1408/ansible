@@ -1,0 +1,23 @@
+---
+- name: 2nd playbook. Uninstall httpd
+  hosts: all
+  tasks:
+    - name: uninstall httpd
+      yum:
+        name: httpd
+        state: absent
+    - name: delete index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+    - name: close port 443
+      firewalld:
+        port: 443/tcp
+        permanent: yes
+        state: disabled
+    - name: close port 80
+      firewalld:
+        port: 80/tcp
+        permanent: yes
+        state: disabled
+...

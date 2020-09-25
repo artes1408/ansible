@@ -1,0 +1,101 @@
+---
+- name: first playbook
+  hosts: all
+  tasks:
+  - name: install httpd
+    yum: name=httpd
+  - name: run httpd service
+    service: name=httpd state=started
+  - name: get service facts
+    service_facts:
+  - name: check httpd status
+    debug:
+      var: ansible_facts.services["httpd.service"]
+  - name: ensure file exists
+    copy:
+      content: "Welcome to my web server"
+      dest: /var/www/html/index.html
+      force: no
+      group: sys
+      owner: root
+      mode: 0555
+  - name: run firewalld service
+    service: name=firewalld state=started
+  - name: get service facts
+    service_facts:
+  - name: check firewalld status
+    debug:
+      var: ansible_facts.services["firewalld.service"]
+  - name: open https
+    firewalld:
+      service: https
+      permanent: true
+      state: enabled
+  - name: open port 443
+    firewalld:
+      port: 443/tcp
+      permanent: yes
+      state: enabled
+  - name: open port 80
+    firewalld:
+      port: 80/tcp
+      permanent: yes
+      state: enabled
+  - name: disable NetworkManager
+    service: name=NetworkManager enabled=false
+  - name: find net.ifnames
+    shell: cat /etc/default/grub
+    register: grub_cat
+  - replace:
+      path: /etc/default/grub
+      regexp: 'GRUB_CMDLINE_LINUX="'
+      replace: 'GRUB_CMDLINE_LINUX="net.ifnames=0 '
+    when: grub_cat.stdout.find('net.ifnames=0') == -1
+  - name: find biosdevname=0
+    replace:
+      path: /etc/default/grub
+      regexp: 'GRUB_CMDLINE_LINUX="'
+      replace: 'GRUB_CMDLINE_LINUX="biosdevname=0 '
+    when: grub_cat.stdout.find('biosdevname=0') == -1
+  - name: grub2-mkconfig
+    shell: grub2-mkconfig
+#lineinfile:
+#      path: /etc/default/grub
+#      line: ".*net.ifnames=0.*"
+#      state: absent
+#    check_mode: yes
+#    register: netifnames
+#  - replace:
+#      path: /etc/default/grub
+#      regexp: '"'
+#      replace: 'net.ifnames=0"'
+#    when: netifnames.chaged 
+#    failed_when: netifnamefnames=0s.changed
+#    shell: cat /etc/default/grub
+#    register: grub_cat
+#  - name: add parameters
+#    when: grub_cat.stdout.find('net.ifnames=0') = -1
+#    service: name=NetworkManager state=stopped
+#    replace:
+#      path: /etc/default/grub
+#      regexp: net.ifnames=0
+#      replace: ""
+#  - replace:
+#      path: /etc/default/grub
+#      regexp: biosdevname=0
+#      replace: ""
+#  - replace:
+#      path: /etc/default/grub
+#      regexp: "  "
+#      replace: ""
+#  - replace:
+#      path: /etc/default/grub
+#      regexp: "  "
+#      replace: ""
+#  - name: insert parameters into the end of line
+#    lineinfile:
+#      path: /etc/default/grub
+#      regexp: GRUB_CMDLINE_LINUX=
+#      insertbefore: '"'
+#      line: " net.ifnames=0 biosdevname=0"
+...
